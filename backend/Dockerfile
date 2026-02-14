@@ -1,23 +1,32 @@
-# Stage 1: Build
-FROM maven:3.9.2-eclipse-temurin-17 AS build
-WORKDIR /app
+name: Java Backend CI
 
-# Copy pom and source code
-COPY pom.xml .
-COPY src ./src
+on:
+  push:
+    paths:
+      - 'backend/**'
+  pull_request:
+    paths:
+      - 'backend/**'
 
-# Build the Spring Boot application
-RUN mvn clean package -DskipTests
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-# Stage 2: Run
-FROM eclipse-temurin:17-jre
-WORKDIR /app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-# Copy the jar from build stage
-COPY --from=build /app/target/*.jar app.jar
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-# Expose port
-EXPOSE 8080
+      - name: Navigate to backend
+        run: cd backend
 
-# Run the application
-ENTRYPOINT ["java","-jar","app.jar"]
+      - name: Build with Maven
+        run: ./mvnw clean compile
+
+      - name: Verify build
+        run: ./mvnw test
